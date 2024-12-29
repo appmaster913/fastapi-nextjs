@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend  # Path to your Next.js frontend code
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"  # Expose the Next.js development server port
+    depends_on:
+      - backend
+    networks:
+      - my-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - my-network
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/dbname  # Update with your PostgreSQL connection details
+      - REDIS_URL=redis://redis:6379/  # Update with your Redis connection details
+
+  postgres:
+    image: bitnami/postgresql:13.3.0
+    restart: always
+    container_name: postgres
+    # env_file: ".env"
+    # user: root
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+    ports:
+      - 5454:5432 # Remove this on production
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_USERNAME=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DATABASE=dbname
+
+  redis:
+    image: redis:latest
+    networks:
+      - my-network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus_data/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./data/grafana:/var/lib/grafana/
+    user: '0'
+volumes:
+  prometheus_data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./prometheus_data
+  grafana_data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./grafana_data
+  postgres_data:
+
+networks:
+  my-network:
+    driver: bridge
+
