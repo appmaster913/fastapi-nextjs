@@ -128,10 +128,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-.env
-.vscode/
 database.db
 # tests/
 # test.yml
 .venv/
 test.js
+config.bat
